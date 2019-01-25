@@ -4,48 +4,65 @@ import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import org.junit.Assert;
-import org.junit.Rule;
-import org.openqa.selenium.*;
+import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.remote.DesiredCapabilities;
+import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.testcontainers.containers.BrowserWebDriverContainer;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 import static org.testcontainers.containers.BrowserWebDriverContainer.VncRecordingMode.RECORD_ALL;
 
 public class Stepdefs {
+
     private RemoteWebDriver driver;
 
-    @Rule
-    public BrowserWebDriverContainer chrome = new BrowserWebDriverContainer()
-            .withCapabilities(new ChromeOptions())
-            .withRecordingMode(RECORD_ALL, new File("target"));
-
-
-
     public Stepdefs() throws IOException {
-
         InputStream input = new FileInputStream("src/main/resources/browser.properties");
         Properties prop = new Properties();
         prop.load(input);
         String browser = prop.getProperty("browser");
+        Boolean incontainer = Boolean.valueOf(prop.getProperty("incontainer"));
+        BrowserWebDriverContainer container = null;
         if (browser.equals("chrome")) {
-            System.setProperty("webdriver.chrome.driver", "C:/drivers/chromedriver.exe");
-            driver = new ChromeDriver();
+            ChromeOptions options = new ChromeOptions();
+            options.addArguments("--disable-notifications");
+            if (!incontainer) {
+                System.setProperty("webdriver.chrome.driver", "C:/drivers/chromedriver.exe");
+                driver = new ChromeDriver(options);
+            } else {
+                container = new BrowserWebDriverContainer()
+                        .withCapabilities(options)
+                        .withRecordingMode(RECORD_ALL, new File("target"));
+                container.start();
+                driver = container.getWebDriver();
+            }
         } else if (browser.equals("firefox")) {
-            System.setProperty("webdriver.gecko.driver", "C:/drivers/geckodriver.exe");
-            driver = new FirefoxDriver();
-//            chrome.start();
-//            driver = chrome.getWebDriver();
-
+            FirefoxOptions options = new FirefoxOptions();
+            options.addArguments("--disable-notifications");
+            if (!incontainer) {
+                System.setProperty("webdriver.gecko.driver", "C:/drivers/geckodriver.exe");
+                driver = new FirefoxDriver();
+            } else {
+                container = new BrowserWebDriverContainer()
+                        .withCapabilities(options)
+                        .withRecordingMode(RECORD_ALL, new File("target"));
+                container.start();
+                driver = container.getWebDriver();
+            }
         }
-        ScenarioContext.getInstance().saveData("driver", driver);
+        ScenarioContext.getInstance().saveData("container", container);
     }
 
 
@@ -63,8 +80,10 @@ public class Stepdefs {
 
     @Then("top community in search result is (.+)")
     public void topCommunityInSearchResultIsCommunity(String communityName) {
-        List<WebElement> elements = driver.findElements(By.xpath("//span[contains(text(),'Communities and users')]/following-sibling::div/div/div/a"));
+        driver.manage().timeouts().implicitlyWait(1500, TimeUnit.MILLISECONDS);
+        List<WebElement> elements = driver.findElements(By.xpath("//span[contains(text(),'Communities and users')]/following-sibling::div/div/div/a/div[1]/div/div"));
         WebElement first = elements.get(0);
         Assert.assertEquals("Community name is correct", communityName, first.getText());
     }
+
 }
