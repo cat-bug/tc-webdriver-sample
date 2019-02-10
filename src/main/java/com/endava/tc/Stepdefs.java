@@ -14,6 +14,8 @@ import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.testcontainers.containers.BrowserWebDriverContainer;
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -55,9 +57,10 @@ public class Stepdefs {
                 System.setProperty("webdriver.gecko.driver", "C:/drivers/geckodriver.exe");
                 driver = new FirefoxDriver();
             } else {
-                container = new BrowserWebDriverContainer()
+                container = (BrowserWebDriverContainer)new BrowserWebDriverContainer()
                         .withCapabilities(options)
-                        .withRecordingMode(RECORD_ALL, new File("target"));
+                        .withRecordingMode(RECORD_ALL, new File("target"))
+                        .withSharedMemorySize(2024L * FileUtils.ONE_MB);
                 container.start();
                 driver = container.getWebDriver();
             }
