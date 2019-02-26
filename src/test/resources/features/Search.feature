@@ -1,4 +1,4 @@
-Feature: Search communities by keywords
+Feature: Search reddit communities by keywords
 
   Scenario Outline: User searches community by keyword <keyword>
     Given home page is opened
